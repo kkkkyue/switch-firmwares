@@ -1,0 +1,56 @@
+# This workflow will do a clean install of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node.js CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+   - cron: '0 1/4 * * *'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.1]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - uses: actions/checkout@master
+    - name: Get Latest Release
+      id: latest_version
+      uses: abatilo/release-info-action@v1.3.0
+      with:
+        owner: kkkkyue
+        repo: Tinfoil
+    
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: './package-lock.json'
+    - run: npm install
+    - run: node getFirmwares.js
+
+    - name: baidupcs
+      run: |
+        wget https://github.com/qjfoidnh/BaiduPCS-Go/releases/download/v3.9.1/BaiduPCS-Go-v3.9.1-linux-amd64.zip
+        unzip ./BaiduPCS-Go-v3.9.1-linux-amd64.zip
+        rm -rf ./BaiduPCS-Go-v3.9.1-linux-amd64.zip
+        ./BaiduPCS-Go-v3.9.1-linux-amd64/BaiduPCS-Go update
+        ./BaiduPCS-Go-v3.9.1-linux-amd64/BaiduPCS-Go login -bduss=$BDUSS
+        assets2=()
+        for asset in ./*deepsea*.zip; do
+          assets2+=("$asset")
+        done
+        ./BaiduPCS-Go-v3.9.1-linux-amd64/BaiduPCS-Go u "${assets2[@]}" /NS/switch-firmwares
+      env:
+        BDUSS: ${{ secrets.BDUSS }}
